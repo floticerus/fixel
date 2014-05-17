@@ -38,24 +38,24 @@
         // css function
         var CSS = ( function ()
             {
-                if ( CSSStyleDeclaration.prototype.setProperty )
+                function cssSET( elem, method, key, val )
                 {
-                    function cssSET( elem, method, key, val )
+                    if ( help.isObject( key ) )
                     {
-                        if ( help.isObject( key ) )
+                        // loop and set all keys in the object
+                        for ( var k in key )
                         {
-                            // loop and set all keys in the object
-                            for ( var k in key )
-                            {
-                                elem.style[ method ]( k, key[ k ] )
-                            }
-                        }
-                        else
-                        {
-                            elem.style[ method ]( key, val )
+                            elem.style[ method ]( k, key[ k ] )
                         }
                     }
+                    else
+                    {
+                        elem.style[ method ]( key, val )
+                    }
+                }
 
+                if ( CSSStyleDeclaration.prototype.setProperty )
+                {
                     // modern browsers
                     return function ( elem, key, val )
                     {
