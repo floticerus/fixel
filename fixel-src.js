@@ -1,3 +1,7 @@
+/** @preserve  fixel v0.0.1
+ *  copyright 2014 - kevin von flotow
+ *  MIT license
+ */
 ;( function ( window )
 	{
 		if ( !window )
