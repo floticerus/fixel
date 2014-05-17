@@ -10,7 +10,80 @@
             return console.log( 'fixel: fatal! window object was not found' )
         }
 
-        // fixel = fixed element
+        var help = ( function ()
+            {
+                /** @constructor */
+                function Helper(){}
+
+                // type checks
+                // inspired by underscore.js solution
+                ;[ 'Arguments', 'Function', 'String', 'Number', 'Date', 'RegExp', 'Object' ].forEach( function ( name )
+                    {
+                        Helper.prototype[ 'is' + name ] = function ( obj )
+                        {
+                            return Object.prototype.toString.call( obj ) === '[object ' + name + ']'
+                        }
+                    }
+                )
+
+                return new Helper()
+            }
+        )()
+
+        // css function
+        var CSS = ( function ()
+            {
+                if ( CSSStyleDeclaration.prototype.setProperty )
+                {
+                    function cssSET( elem, method, key, val )
+                    {
+                        if ( help.isObject( key ) )
+                        {
+                            // loop and set all keys in the object
+                            for ( var k in key )
+                            {
+                                elem.style[ method ]( k, key[ k ] )
+                            }
+                        }
+                        else
+                        {
+                            elem.style[ method ]( key, val )
+                        }
+                    }
+
+                    // modern browsers
+                    return function ( elem, key, val )
+                    {
+                        return typeof val === 'undefined' && help.isString( key ) ? elem.style.getProperty( key ) : cssSET( elem, 'setProperty', key, val )
+                    }
+                }
+                else if ( CSSStyleDeclaration.prototype.setAttribute )
+                {
+                    // old ie
+                    return function ( elem, key, val )
+                    {
+                        return typeof val === 'undefined' && help.isString( key ) ? elem.style.getAttribute( key ) : cssSET( elem, 'setAttribute', key, val )
+                    }
+                }
+                else
+                {
+                    // pos - set style directly
+                    return function ( elem, key, val )
+                    {
+                        if ( typeof val === 'undefined' && help.isString( key ) )
+                        {
+                            // get
+                            return elem.style[ key ]
+                        }
+                        else
+                        {
+                            // set
+                            elem.style[ key ] = val
+                        }
+                    }
+                }
+            }
+        )()
 
         /** @constructor */
         function Fixel( elem, opts )
@@ -30,9 +103,20 @@
 
             this.fixed = null
 
-            this._resizeHandler = this.resizeHandler.bind( this )
+            // do this to avoid using Function.bind
+            ;( function ( that )
+                {
+                    that._resizeHandler = function ()
+                    {
+                        that.resizeHandler()
+                    }
 
-            this._scrollHandler = this.scrollHandler.bind( this )
+                    that._scrollHandler = function ()
+                    {
+                        that.scrollHandler()
+                    }
+                }
+            )( this )
 
             this.fix()
         }
@@ -50,11 +134,15 @@
                 // remove id tag since id must be unique
                 this.fixed.removeAttribute( 'id' )
 
-                this.fixed.style.setProperty( 'position', 'fixed' )
+                CSS( this.fixed,
+                    {
+                        'position': 'fixed',
 
-                this.fixed.style.setProperty( 'z-index', this.opts.zIndex )
+                        'z-index': this.opts.zIndex,
 
-                this.fixed.style.setProperty( 'top', this.opts.top )
+                        'top': this.opts.top
+                    }
+                )
 
                 this.setPos()
 
@@ -88,7 +176,7 @@
             {
                 num = typeof num !== 'undefined' ? num : this.elem.getBoundingClientRect()[ dir ]
 
-                this.fixed.style.setProperty( dir, num + 'px' )
+                CSS( this.fixed, dir, num + 'px' )
             },
 
             setLeft: function ( num )
@@ -139,22 +227,24 @@
                     window.removeEventListener( 'resize', this._resizeHandler )
                 }
 
-                this.fixed.style.setProperty( 'display', fixedDisplay )
+                CSS( this.fixed, 'display', fixedDisplay )
 
-                this.elem.style.setProperty( 'visibility', elemVis )
+                CSS( this.elem, 'visibility', elemVis )
 
                 this.visible = bool
             },
 
             scrollHandler: function ()
             {
-                // vertical scrolling
                 if ( this.elem.getBoundingClientRect().top < parseInt( this.opts.top ) )
                 {
                     if ( !this.visible )
                     {
                         this.setVisible( true )
                     }
+
+                    // set left to retain horizontal scrolling
+                    this.setLeft()
                 }
                 else if ( this.visible )
                 {
