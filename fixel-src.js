@@ -17,14 +17,19 @@
 
                 // type checks
                 // inspired by underscore.js solution
-                ;[ 'Arguments', 'Function', 'String', 'Number', 'Date', 'RegExp', 'Object' ].forEach( function ( name )
-                    {
-                        Helper.prototype[ 'is' + name ] = function ( obj )
+                var r = [ 'Arguments', 'Function', 'String', 'Number', 'Date', 'RegExp', 'Object' ]
+
+                for ( var i = 0, l = r.length; i < l; ++i )
+                {
+                    ( function ( type )
                         {
-                            return Object.prototype.toString.call( obj ) === '[object ' + name + ']'
+                            Helper.prototype[ 'is' + type ] = function ( obj )
+                            {
+                                return Object.prototype.toString.call( obj ) === '[object ' + type + ']'
+                            }
                         }
-                    }
-                )
+                    )( r[ i ] )
+                }
 
                 return new Helper()
             }
